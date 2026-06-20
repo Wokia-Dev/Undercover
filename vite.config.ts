@@ -20,8 +20,7 @@ export default defineConfig({
         background_color: '#0f172a',
         display: 'standalone',
         orientation: 'portrait',
-        // 'start_url' doit pointer sur la racine de ton sous-dossier
-        start_url: '/undercover-app/',
+        start_url: '/Undercover/',
         icons: [
           {
             src: 'favicon.svg',
@@ -33,6 +32,5 @@ export default defineConfig({
       }
     })
   ],
-  // REMPLACE 'undercover-app' PAR LE NOM EXACT DE TON REPO GITHUB
-  base: '/undercover-app/',
+  base: '/Undercover/',
 })
