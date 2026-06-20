@@ -15,7 +15,8 @@ interface SetupScreenProps {
     wordPair: WordPair,
     categoryName: string,
     descriptionMode: 'guided' | 'verbal',
-    timerDuration: number
+    timerDuration: number,
+    categoryId: string
   ) => void;
   onOpenCustomLists: () => void;
   leaderboard: Record<string, number>;
@@ -161,7 +162,7 @@ export default function SetupScreen({
     };
 
     // 3. Launch game state
-    onStartGame(playerNames, roles, wordPair, catName, descriptionMode, timerDuration);
+    onStartGame(playerNames, roles, wordPair, catName, descriptionMode, timerDuration, selectedCategoryId);
   };
 
   const handleResetRoles = () => {
@@ -171,6 +172,17 @@ export default function SetupScreen({
   };
 
   const hasScores = Object.keys(leaderboard).length > 0;
+
+  const handleClearLeaderboard = () => {
+    const confirmed = window.confirm(
+      lang === 'fr'
+        ? "Voulez-vous vraiment réinitialiser tous les scores ?"
+        : "Are you sure you want to reset all scores?"
+    );
+    if (confirmed) {
+      onClearLeaderboard();
+    }
+  };
 
   return (
     <div className="screen-wrapper">
@@ -183,7 +195,7 @@ export default function SetupScreen({
         {/* Categories Selectors */}
         <div className="glass-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <h3 style={{ color: '#f8fafc' }}>
+            <h3 style={{ color: 'var(--color-text-primary)' }}>
               {lang === 'fr' ? '📁 Catégorie de Mots' : '📁 Word Category'}
             </h3>
             <button
@@ -223,7 +235,7 @@ export default function SetupScreen({
         {/* Players Config */}
         <div className="glass-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <h3 style={{ color: '#f8fafc' }}>
+            <h3 style={{ color: 'var(--color-text-primary)' }}>
               {lang === 'fr' ? '👥 Joueurs' : '👥 Players'} ({playerNames.length})
             </h3>
             <button
@@ -271,7 +283,7 @@ export default function SetupScreen({
         {/* Role Counters */}
         <div className="glass-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ color: '#f8fafc' }}>
+            <h3 style={{ color: 'var(--color-text-primary)' }}>
               <Sliders size={16} style={{ verticalAlign: 'middle', marginRight: '0.35rem' }} />
               {lang === 'fr' ? '🎭 Rôles et Infiltrés' : '🎭 Roles Distribution'}
             </h3>
@@ -290,10 +302,10 @@ export default function SetupScreen({
           {/* Civils Slider */}
           <div className="slider-container">
             <div className="slider-header">
-              <span style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>
+              <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
                 🟢 {lang === 'fr' ? 'Civils' : 'Civils'}
               </span>
-              <span className="slider-val" style={{ color: '#10b981' }}>{roles.civil}</span>
+              <span className="slider-val" style={{ color: 'var(--color-civil)' }}>{roles.civil}</span>
             </div>
             <input
               type="range"
@@ -308,10 +320,10 @@ export default function SetupScreen({
           {/* Undercovers Slider */}
           <div className="slider-container">
             <div className="slider-header">
-              <span style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>
+              <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
                 🟣 {lang === 'fr' ? 'Undercovers' : 'Undercovers'}
               </span>
-              <span className="slider-val" style={{ color: '#a855f7' }}>{roles.undercover}</span>
+              <span className="slider-val" style={{ color: 'var(--color-undercover)' }}>{roles.undercover}</span>
             </div>
             <input
               type="range"
@@ -326,10 +338,10 @@ export default function SetupScreen({
           {/* Mr Whites Slider */}
           <div className="slider-container" style={{ marginBottom: 0 }}>
             <div className="slider-header">
-              <span style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>
+              <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
                 ⚪ {lang === 'fr' ? 'Mr. Whites' : 'Mr. Whites'}
               </span>
-              <span className="slider-val" style={{ color: '#e2e8f0' }}>{roles.mrWhite}</span>
+              <span className="slider-val" style={{ color: 'var(--color-mr-white)' }}>{roles.mrWhite}</span>
             </div>
             <input
               type="range"
@@ -353,7 +365,7 @@ export default function SetupScreen({
               cursor: 'pointer',
             }}
           >
-            <h3 style={{ color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <h3 style={{ color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
               <Settings size={16} />
               {lang === 'fr' ? '⚙️ Options Avancées' : '⚙️ Advanced Settings'}
             </h3>
@@ -387,7 +399,7 @@ export default function SetupScreen({
                     {lang === 'fr' ? 'Verbal (Direct)' : 'Verbal (Direct)'}
                   </button>
                 </div>
-                <p style={{ fontSize: '0.75rem', marginTop: '0.35rem', color: '#94a3b8' }}>
+                <p style={{ fontSize: '0.75rem', marginTop: '0.35rem', color: 'var(--color-text-muted)' }}>
                   {descriptionMode === 'guided'
                     ? (lang === 'fr' ? 'Chaque joueur passe le téléphone pour voir son tour de description.' : 'Players pass the phone turn-by-turn to enter their clues on-screen.')
                     : (lang === 'fr' ? 'Description libre à haute voix autour de la table. Plus rapide.' : 'Players say their clues aloud face-to-face immediately. Faster flow.')
@@ -424,7 +436,7 @@ export default function SetupScreen({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
               <h3 style={{ color: '#fbbf24' }}>🏆 {lang === 'fr' ? 'Scoreboard Général' : 'General Leaderboard'}</h3>
               <button
-                onClick={onClearLeaderboard}
+                onClick={handleClearLeaderboard}
                 className="btn btn-secondary btn-icon"
                 style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', color: '#f43f5e', width: 'auto' }}
               >

@@ -73,18 +73,18 @@ export default function EliminationScreen({ lang, gameState, onEliminatePlayer, 
                     width: '40px',
                     height: '40px',
                     borderRadius: '50%',
-                    background: isSelected ? 'var(--color-eliminated)' : 'rgba(255,255,255,0.05)',
+                    background: isSelected ? 'var(--color-eliminated)' : 'var(--btn-secondary-bg)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     transition: 'var(--transition-fast)',
                   }}
                 >
-                  <UserMinus size={18} style={{ color: isSelected ? '#ffffff' : '#cbd5e1' }} />
+                  <UserMinus size={18} style={{ color: isSelected ? '#ffffff' : 'var(--color-text-secondary)' }} />
                 </div>
 
-                <div className="vote-card-name">{player.name}</div>
-                <div className="vote-card-score">{player.score} pts</div>
+                <div className="vote-card-name" style={{ color: 'var(--color-text-primary)' }}>{player.name}</div>
+                <div className="vote-card-score" style={{ color: 'var(--color-text-muted)' }}>{player.score} pts</div>
               </div>
             );
           })}

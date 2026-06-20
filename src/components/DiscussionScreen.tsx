@@ -95,7 +95,7 @@ export default function DiscussionScreen({ lang, timerDuration, onStartEliminati
               <span className="timer-val">{formatTime(seconds)}</span>
             </div>
             {timerDuration === 0 && (
-              <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 ⏱️ {lang === 'fr' ? 'Débat Libre (Chronomètre)' : 'Open Debate (Stopwatch)'}
               </div>
             )}

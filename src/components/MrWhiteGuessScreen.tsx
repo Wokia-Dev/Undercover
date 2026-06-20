@@ -35,14 +35,14 @@ export default function MrWhiteGuessScreen({ lang, gameState, onSubmitGuess }: M
           <ShieldAlert size={28} style={{ color: 'var(--color-mr-white)' }} />
         </div>
 
-        <h2 style={{ fontSize: '1.4rem', color: '#ffffff', marginBottom: '0.5rem' }}>
+        <h2 style={{ fontSize: '1.4rem', color: 'var(--color-text-primary)', marginBottom: '0.5rem' }}>
           {lang === 'fr' ? 'Élimination de Mr. White !' : 'Mr. White Voted Out!'}
         </h2>
         <div style={{ color: 'var(--color-mr-white)', fontWeight: 800, fontSize: '1.25rem', marginBottom: '1rem' }}>
           👤 {eliminatedPlayer?.name}
         </div>
 
-        <p style={{ fontSize: '0.9rem', color: '#cbd5e1', marginBottom: '1.5rem' }}>
+        <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
           {lang === 'fr'
             ? "Mr. White a une dernière chance de voler la victoire ! Il doit deviner à haute voix le mot secret des Civils."
             : "Mr. White has one last chance to steal victory! He must guess the Civils' secret word aloud."}
@@ -53,12 +53,12 @@ export default function MrWhiteGuessScreen({ lang, gameState, onSubmitGuess }: M
           className="glass-card"
           style={{
             padding: '1rem',
-            background: 'rgba(0, 0, 0, 0.25)',
+            background: 'rgba(0, 0, 0, 0.05)',
             border: '1px dashed var(--glass-border-focus)',
             marginBottom: '1.5rem',
           }}
         >
-          <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.5rem' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
             {lang === 'fr' ? "Le mot secret des Civils était :" : "The Civils' secret word was:"}
           </div>
           
@@ -67,7 +67,7 @@ export default function MrWhiteGuessScreen({ lang, gameState, onSubmitGuess }: M
               style={{
                 fontSize: '1.75rem',
                 fontWeight: 900,
-                color: '#10b981',
+                color: 'var(--color-civil)',
                 textShadow: '0 0 10px rgba(16, 185, 129, 0.2)',
                 animation: 'fadeIn 0.2s ease-out',
               }}
@@ -85,7 +85,7 @@ export default function MrWhiteGuessScreen({ lang, gameState, onSubmitGuess }: M
           )}
         </div>
 
-        <div style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '1.25rem' }}>
+        <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem' }}>
           {lang === 'fr'
             ? "Mr. White a-t-il deviné le bon mot ?"
             : "Did Mr. White guess the word correctly?"}

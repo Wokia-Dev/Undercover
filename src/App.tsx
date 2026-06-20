@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGameState } from './hooks/useGameState';
+import { useLocalStorage } from './hooks/useLocalStorage';
 import SetupScreen from './components/SetupScreen';
 import RevealScreen from './components/RevealScreen';
 import DescriptionScreen from './components/DescriptionScreen';
@@ -8,7 +9,7 @@ import EliminationScreen from './components/EliminationScreen';
 import MrWhiteGuessScreen from './components/MrWhiteGuessScreen';
 import GameOverScreen from './components/GameOverScreen';
 import CustomListEditor from './components/CustomListEditor';
-import { Download, Globe } from 'lucide-react';
+import { Download, Sun, Moon, Monitor } from 'lucide-react';
 import './styles/main.css';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -35,10 +36,47 @@ export default function App() {
     skipElimination,
     resetGame,
     clearLeaderboard,
+    playAgain,
   } = useGameState();
 
   const [currentView, setCurrentView] = useState<'game' | 'custom_lists'>('game');
   
+  // Theme management: 'system' | 'light' | 'dark'
+  const [theme, setTheme] = useLocalStorage<'system' | 'light' | 'dark'>('undercover_theme', 'system');
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    const applyTheme = (targetTheme: 'system' | 'light' | 'dark') => {
+      if (targetTheme === 'system') {
+        root.removeAttribute('data-theme');
+      } else {
+        root.setAttribute('data-theme', targetTheme);
+      }
+    };
+
+    applyTheme(theme);
+
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = () => {
+        applyTheme('system');
+      };
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener('change', handleChange);
+      } else {
+        mediaQuery.addListener(handleChange);
+      }
+      return () => {
+        if (mediaQuery.removeEventListener) {
+          mediaQuery.removeEventListener('change', handleChange);
+        } else {
+          mediaQuery.removeListener(handleChange);
+        }
+      };
+    }
+  }, [theme]);
+
   // PWA installation state
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
@@ -144,7 +182,9 @@ export default function App() {
           <GameOverScreen
             lang={activeLanguage}
             gameState={gameState}
-            onPlayAgain={resetGame}
+            onPlayAgain={playAgain}
+            onBackToMenu={resetGame}
+            onResetScores={clearLeaderboard}
           />
         );
       default:
@@ -161,25 +201,90 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {/* Top Header Controls: Language switcher and PWA installer */}
+      {/* Top Header Controls: Language switcher and Theme switcher */}
       {gameState.status === 'setup' && currentView === 'game' && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', zIndex: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#94a3b8', fontSize: '0.8rem' }}>
-            <Globe size={14} />
-            <span>Language:</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', zIndex: 10 }}>
+          {/* Language Switcher */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="lang-switcher" style={{ margin: 0 }}>
+              <button
+                onClick={() => setActiveLanguage('en')}
+                className={`lang-btn ${activeLanguage === 'en' ? 'active' : ''}`}
+                style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setActiveLanguage('fr')}
+                className={`lang-btn ${activeLanguage === 'fr' ? 'active' : ''}`}
+                style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+              >
+                FR
+              </button>
+            </div>
           </div>
-          <div className="lang-switcher">
+
+          {/* Theme Switcher Toggle */}
+          <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--btn-secondary-bg)', border: '1px solid var(--glass-border)', padding: '2px', borderRadius: 'var(--radius-full)' }}>
             <button
-              onClick={() => setActiveLanguage('en')}
-              className={`lang-btn ${activeLanguage === 'en' ? 'active' : ''}`}
+              onClick={() => setTheme('light')}
+              className={`theme-btn ${theme === 'light' ? 'active' : ''}`}
+              title={activeLanguage === 'fr' ? 'Thème Clair' : 'Light Theme'}
+              style={{
+                background: theme === 'light' ? 'var(--color-primary)' : 'transparent',
+                color: theme === 'light' ? '#ffffff' : 'var(--color-text-secondary)',
+                border: 'none',
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'var(--transition-fast)',
+              }}
             >
-              EN
+              <Sun size={14} />
             </button>
             <button
-              onClick={() => setActiveLanguage('fr')}
-              className={`lang-btn ${activeLanguage === 'fr' ? 'active' : ''}`}
+              onClick={() => setTheme('dark')}
+              className={`theme-btn ${theme === 'dark' ? 'active' : ''}`}
+              title={activeLanguage === 'fr' ? 'Thème Sombre' : 'Dark Theme'}
+              style={{
+                background: theme === 'dark' ? 'var(--color-primary)' : 'transparent',
+                color: theme === 'dark' ? '#ffffff' : 'var(--color-text-secondary)',
+                border: 'none',
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'var(--transition-fast)',
+              }}
             >
-              FR
+              <Moon size={14} />
+            </button>
+            <button
+              onClick={() => setTheme('system')}
+              className={`theme-btn ${theme === 'system' ? 'active' : ''}`}
+              title={activeLanguage === 'fr' ? 'Thème Système' : 'System Theme'}
+              style={{
+                background: theme === 'system' ? 'var(--color-primary)' : 'transparent',
+                color: theme === 'system' ? '#ffffff' : 'var(--color-text-secondary)',
+                border: 'none',
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'var(--transition-fast)',
+              }}
+            >
+              <Monitor size={14} />
             </button>
           </div>
         </div>

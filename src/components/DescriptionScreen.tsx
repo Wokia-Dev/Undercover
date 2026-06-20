@@ -34,7 +34,7 @@ export default function DescriptionScreen({ lang, gameState, onNextDescriber }: 
             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-accent)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               {lang === 'fr' ? 'Étape 2 : Description' : 'Phase 2: Description'}
             </span>
-            <div style={{ fontSize: '0.95rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+            <div style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
               {lang === 'fr' ? 'Mode Verbal Direct' : 'Direct Verbal Mode'}
             </div>
           </div>
@@ -45,7 +45,7 @@ export default function DescriptionScreen({ lang, gameState, onNextDescriber }: 
             </div>
 
             <div className="turn-indicator" style={{ marginBottom: '1.5rem' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem', color: '#ffffff' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem', color: 'var(--color-text-primary)' }}>
                 {lang === 'fr' ? '📢 À toi de commencer !' : "📢 It's your turn to start!"}
               </h2>
               <div
@@ -66,7 +66,7 @@ export default function DescriptionScreen({ lang, gameState, onNextDescriber }: 
             {/* Structured Step Instructions */}
             <div
               style={{
-                background: 'rgba(0, 0, 0, 0.25)',
+                background: 'rgba(0, 0, 0, 0.05)',
                 border: '1px solid var(--glass-border)',
                 borderRadius: 'var(--radius-md)',
                 padding: '1.25rem',
@@ -102,7 +102,7 @@ export default function DescriptionScreen({ lang, gameState, onNextDescriber }: 
                     : "Everyone gives exactly ONE clue."}
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.9rem', color: '#fbbf24', fontWeight: 600 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--color-eliminated)', fontWeight: 600 }}>
                 <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>⚪</span>
                 <span>
                   {lang === 'fr'
@@ -132,7 +132,7 @@ export default function DescriptionScreen({ lang, gameState, onNextDescriber }: 
                       border: isStart ? '1px solid var(--color-accent)' : '1px solid var(--glass-border)',
                       fontSize: '0.8rem',
                       fontWeight: isStart ? 700 : 500,
-                      color: isStart ? '#ffffff' : '#cbd5e1',
+                      color: isStart ? '#ffffff' : 'var(--color-text-secondary)',
                     }}
                   >
                     {idx + 1}. {player?.name}
@@ -158,7 +158,7 @@ export default function DescriptionScreen({ lang, gameState, onNextDescriber }: 
           <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-accent)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             {lang === 'fr' ? 'Étape 2 : Description' : 'Phase 2: Description'}
           </span>
-          <div style={{ fontSize: '0.95rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+          <div style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
             {lang === 'fr' ? `Clue ${currentDescriberIndex + 1} sur ${descriptionOrder.length}` : `Clue ${currentDescriberIndex + 1} of ${descriptionOrder.length}`}
           </div>
         </div>
@@ -169,13 +169,13 @@ export default function DescriptionScreen({ lang, gameState, onNextDescriber }: 
           </div>
 
           <div className="turn-indicator">
-            <span style={{ fontSize: '0.9rem', color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               {lang === 'fr' ? "C'est le tour de :" : "Active Player:"}
             </span>
             <div className="describer-name">{currentDescriber.name}</div>
           </div>
 
-          <p style={{ fontSize: '1rem', color: '#cbd5e1', marginBottom: '2rem' }}>
+          <p style={{ fontSize: '1rem', color: 'var(--color-text-secondary)', marginBottom: '2rem' }}>
             {lang === 'fr'
               ? "Donnez un mot ou indice verbal à haute voix pour décrire votre mot secret !"
               : "Give a single word or short phrase clue aloud to describe your secret word!"}
@@ -210,12 +210,12 @@ export default function DescriptionScreen({ lang, gameState, onNextDescriber }: 
                   style={{
                     fontSize: '1rem',
                     fontWeight: 700,
-                    color: currentDescriber.role === 'civil' ? '#10b981' : currentDescriber.role === 'undercover' ? '#a855f7' : '#e2e8f0',
+                    color: currentDescriber.role === 'civil' ? 'var(--color-civil)' : currentDescriber.role === 'undercover' ? 'var(--color-undercover)' : 'var(--color-mr-white)',
                     animation: 'fadeIn 0.15s ease-out',
-                    background: 'rgba(0,0,0,0.3)',
+                    background: 'rgba(0,0,0,0.1)',
                     padding: '0.25rem 1rem',
                     borderRadius: '4px',
-                    border: '1px solid rgba(255,255,255,0.05)',
+                    border: '1px solid var(--glass-border)',
                   }}
                 >
                   {currentDescriber.role === 'mr_white'

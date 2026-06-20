@@ -1,6 +1,7 @@
 import { useLocalStorage } from './useLocalStorage';
 import { setupPlayers, checkVictory, shuffleArray } from '../utils/gameLogic';
 import type { RoleSettings } from '../utils/gameLogic';
+import { DEFAULT_CATEGORIES_EN, DEFAULT_CATEGORIES_FR } from '../data/defaultWords';
 
 export type PlayerRole = 'civil' | 'undercover' | 'mr_white';
 
@@ -32,6 +33,7 @@ export interface GameState {
   status: GamePhase;
   currentWordPair: WordPair;
   currentCategory: string;
+  currentCategoryId: string;
   currentPlayerRevealIndex: number;
   revealState: 'idle' | 'showing' | 'hidden';
   startPlayerId: string;
@@ -49,6 +51,7 @@ const initialGameState: GameState = {
   status: 'setup',
   currentWordPair: { civil: '', undercover: '' },
   currentCategory: '',
+  currentCategoryId: '',
   currentPlayerRevealIndex: 0,
   revealState: 'idle',
   startPlayerId: '',
@@ -65,6 +68,7 @@ export function useGameState() {
   const [gameState, setGameState] = useLocalStorage<GameState>('undercover_game_state', initialGameState);
   const [leaderboard, setLeaderboard] = useLocalStorage<Record<string, number>>('undercover_leaderboard', {});
   const [activeLanguage, setActiveLanguage] = useLocalStorage<'en' | 'fr'>('undercover_language', 'fr');
+  const [customLists] = useLocalStorage<any[]>('undercover_custom_lists', []);
 
   // Start a new game
   const startGame = (
@@ -73,7 +77,8 @@ export function useGameState() {
     wordPair: WordPair,
     categoryName: string,
     descriptionMode: 'guided' | 'verbal',
-    timerDuration: number
+    timerDuration: number,
+    categoryId: string
   ) => {
     // Generate fresh players with roles and words
     const newPlayers = setupPlayers(playerNames, roles, wordPair);
@@ -98,6 +103,7 @@ export function useGameState() {
       status: 'reveal',
       currentWordPair: wordPair,
       currentCategory: categoryName,
+      currentCategoryId: categoryId,
       currentPlayerRevealIndex: 0,
       revealState: 'idle',
       startPlayerId: randomStartPlayer.id,
@@ -310,6 +316,79 @@ export function useGameState() {
     });
   };
 
+  // Play again (re-runs match directly using current configurations, keeping cumulative scores)
+  const playAgain = () => {
+    const categoryId = gameState.currentCategoryId || '';
+    const categoryName = gameState.currentCategory;
+    const lang = activeLanguage;
+
+    let selectedPairs: [string, string][] = [];
+    const customList = customLists.find((l: any) => l.id === categoryId || l.name === categoryName);
+    if (customList) {
+      selectedPairs = customList.pairs.map((p: any) => [p.civil, p.undercover]);
+    } else {
+      const categories = lang === 'fr' ? DEFAULT_CATEGORIES_FR : DEFAULT_CATEGORIES_EN;
+      const defaultCategory = categories.find(c => c.id === categoryId || c.name === categoryName);
+      if (defaultCategory) {
+        selectedPairs = defaultCategory.pairs;
+      }
+    }
+
+    if (selectedPairs.length === 0) {
+      const categories = lang === 'fr' ? DEFAULT_CATEGORIES_FR : DEFAULT_CATEGORIES_EN;
+      selectedPairs = categories.flatMap(c => c.pairs);
+    }
+
+    const randomIdx = Math.floor(Math.random() * selectedPairs.length);
+    const rawPair = selectedPairs[randomIdx];
+    const wordPair: WordPair = {
+      civil: rawPair[0],
+      undercover: rawPair[1],
+    };
+
+    const roleCounts = { civil: 0, undercover: 0, mrWhite: 0 };
+    gameState.players.forEach(p => {
+      if (p.role === 'civil') roleCounts.civil++;
+      else if (p.role === 'undercover') roleCounts.undercover++;
+      else if (p.role === 'mr_white') roleCounts.mrWhite++;
+    });
+
+    if (roleCounts.civil === 0 && roleCounts.undercover === 0 && roleCounts.mrWhite === 0) {
+      roleCounts.civil = Math.max(1, gameState.players.length - 1);
+      roleCounts.undercover = 1;
+    }
+
+    const playerNames = gameState.players.map(p => p.name);
+    const newPlayers = setupPlayers(playerNames, roleCounts, wordPair);
+
+    const hydratedPlayers = newPlayers.map(p => ({
+      ...p,
+      score: leaderboard[p.name.trim()] || 0,
+    }));
+
+    const randomStartPlayer = hydratedPlayers[Math.floor(Math.random() * hydratedPlayers.length)];
+
+    const descriptionOrder = [
+      randomStartPlayer.id,
+      ...shuffleArray(hydratedPlayers.filter(p => p.id !== randomStartPlayer.id).map(p => p.id)),
+    ];
+
+    setGameState(prev => ({
+      ...prev,
+      players: hydratedPlayers,
+      status: 'reveal',
+      currentWordPair: wordPair,
+      currentPlayerRevealIndex: 0,
+      revealState: 'idle',
+      startPlayerId: randomStartPlayer.id,
+      descriptionOrder,
+      currentDescriberIndex: 0,
+      eliminatedPlayerId: null,
+      mrWhiteGuessedCorrectly: null,
+      pointsAwarded: false,
+    }));
+  };
+
   return {
     gameState,
     leaderboard,
@@ -325,5 +404,6 @@ export function useGameState() {
     skipElimination,
     resetGame,
     clearLeaderboard,
+    playAgain,
   };
 }

@@ -142,7 +142,7 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
             <div style={{ marginTop: '1rem' }}>
               {customLists.length === 0 ? (
                 <div className="glass-card" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-                  <FileText size={36} style={{ color: '#64748b', marginBottom: '0.75rem' }} />
+                  <FileText size={36} style={{ color: 'var(--color-text-muted)', marginBottom: '0.75rem' }} />
                   <p>
                     {lang === 'fr'
                       ? "Aucune liste personnalisée pour l'instant. Ajoutez-en une !"
@@ -153,17 +153,17 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
                 customLists.map((list) => (
                   <div key={list.id} className="list-preview-card">
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: '1.05rem', color: '#f8fafc' }}>
+                      <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--color-text-primary)' }}>
                         {list.name}
                       </div>
-                      <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.2rem' }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2 / 0.2rem' }}>
                         {list.pairs.length} {lang === 'fr' ? 'paires de mots' : 'word pairs'}
                       </div>
                     </div>
                     <button
                       onClick={() => handleDeleteList(list.id)}
                       className="btn btn-secondary btn-icon"
-                      style={{ padding: '0.5rem', color: '#f43f5e', borderColor: 'rgba(244, 63, 94, 0.2)' }}
+                      style={{ padding: '0.5rem', color: 'var(--color-eliminated)', borderColor: 'var(--color-eliminated-border)' }}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -174,7 +174,7 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
           </div>
         ) : (
           <form onSubmit={handleSaveList} className="glass-card" style={{ padding: '1.25rem' }}>
-            <h3 style={{ marginBottom: '1rem', color: '#f8fafc' }}>
+            <h3 style={{ marginBottom: '1rem', color: 'var(--color-text-primary)' }}>
               {lang === 'fr' ? 'Nouvelle Liste de Mots' : 'New Word List'}
             </h3>
 
@@ -194,7 +194,7 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
               <label className="input-label">
                 {lang === 'fr' ? 'Import en masse (un couple par ligne)' : 'Bulk Import (one pair per line)'}
               </label>
-              <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.5rem' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
                 {lang === 'fr'
                   ? 'Format : MotCivil , MotUndercover (séparateur: , ou ; ou -)'
                   : 'Format: CivilWord , UndercoverWord (separators: , or ; or -)'}
@@ -219,7 +219,7 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',
-                  color: '#10b981',
+                  color: 'var(--color-civil)',
                   fontSize: '0.875rem',
                   marginBottom: '1rem',
                   fontWeight: 600,
@@ -240,7 +240,7 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: '0.5rem',
-                  color: '#fbbf24',
+                  color: 'var(--color-eliminated)',
                   fontSize: '0.8rem',
                   marginBottom: '1rem',
                 }}
@@ -263,7 +263,7 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
                     border: '1px solid var(--glass-border)',
                     borderRadius: 'var(--radius-sm)',
                     padding: '0.5rem',
-                    background: 'rgba(0, 0, 0, 0.2)',
+                    background: 'rgba(0, 0, 0, 0.05)',
                   }}
                 >
                   {parsedPairs.map((p, idx) => (
@@ -274,11 +274,11 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
                         justifyContent: 'space-between',
                         padding: '0.25rem 0.5rem',
                         fontSize: '0.85rem',
-                        borderBottom: idx < parsedPairs.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
+                        borderBottom: idx < parsedPairs.length - 1 ? '1px solid var(--glass-border)' : 'none',
                       }}
                     >
-                      <span style={{ color: '#10b981' }}>{p.civil}</span>
-                      <span style={{ color: '#a855f7' }}>{p.undercover}</span>
+                      <span style={{ color: 'var(--color-civil)' }}>{p.civil}</span>
+                      <span style={{ color: 'var(--color-undercover)' }}>{p.undercover}</span>
                     </div>
                   ))}
                 </div>
