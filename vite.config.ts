@@ -20,7 +20,7 @@ export default defineConfig({
         background_color: '#0f172a',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/Undercover/',
+        start_url: '/',
         icons: [
           {
             src: 'favicon.svg',
@@ -32,5 +32,5 @@ export default defineConfig({
       }
     })
   ],
-  base: '/Undercover/',
+  base: '/',
 })
