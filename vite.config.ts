@@ -2,7 +2,6 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
@@ -21,7 +20,8 @@ export default defineConfig({
         background_color: '#0f172a',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '.',
+        // 'start_url' doit pointer sur la racine de ton sous-dossier
+        start_url: '/undercover-app/',
         icons: [
           {
             src: 'favicon.svg',
@@ -33,6 +33,6 @@ export default defineConfig({
       }
     })
   ],
-  base: './', // Ensures relative assets are loaded correctly on GitHub Pages
+  // REMPLACE 'undercover-app' PAR LE NOM EXACT DE TON REPO GITHUB
+  base: '/undercover-app/',
 })
-
