@@ -92,7 +92,11 @@ export function getWordPairsForCategory(
   const categories = lang === 'fr' ? DEFAULT_CATEGORIES_FR : DEFAULT_CATEGORIES_EN;
   const defaultCategory = categories.find(c => c.id === categoryId);
   if (defaultCategory) {
-    return defaultCategory.pairs.map(p => ({ civil: p[0], undercover: p[1] }));
+    return defaultCategory.pairs.map(p => ({
+      civil: p[0],
+      undercover: p[1],
+      hint: p[2]
+    }));
   }
   return [];
 }

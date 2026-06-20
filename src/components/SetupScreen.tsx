@@ -29,7 +29,7 @@ export default function SetupScreen({
   onOpenCustomLists,
   leaderboard,
   onClearLeaderboard,
-  }: SetupScreenProps) {
+}: SetupScreenProps) {
   // Load custom lists from local storage
   const [customLists] = useLocalStorage<CustomWordList[]>('undercover_custom_lists', []);
 
@@ -39,7 +39,7 @@ export default function SetupScreen({
   const [enableHints, setEnableHints] = useLocalStorage<boolean>('undercover_setup_enable_hints', false);
   const [hintTarget, setHintTarget] = useLocalStorage<'undercover' | 'mr_white' | 'both'>('undercover_setup_hint_target', 'undercover');
   const [showAdvanced, setShowAdvanced] = useState(false);
-  
+
   // Set default names or fetch from previous state
   const [playerNames, setPlayerNames] = useLocalStorage<string[]>('undercover_setup_names', [
     'Alice',
@@ -49,7 +49,7 @@ export default function SetupScreen({
   ]);
 
   const [selectedCategoryId, setSelectedCategoryId] = useLocalStorage<string>('undercover_setup_selected_category_id', 'animaux');
-  
+
   // Role configurations
   const [roles, setRoles] = useLocalStorage<RoleSettings>('undercover_setup_roles', { civil: 3, undercover: 1, mrWhite: 0 });
   const [isManualOverride, setIsManualOverride] = useLocalStorage<boolean>('undercover_setup_manual_override', false);
@@ -381,7 +381,7 @@ export default function SetupScreen({
           >
             <h3 style={{ color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
               <Settings size={16} />
-              {lang === 'fr' ? '⚙️ Options Avancées' : '⚙️ Advanced Settings'}
+              {lang === 'fr' ? 'Options Avancées' : 'Advanced Settings'}
             </h3>
             <span style={{ fontSize: '0.8rem', color: '#a5b4fc', fontWeight: 700 }}>
               {showAdvanced ? (lang === 'fr' ? 'Masquer' : 'Hide') : (lang === 'fr' ? 'Afficher' : 'Show')}
