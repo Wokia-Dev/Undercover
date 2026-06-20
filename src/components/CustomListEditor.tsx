@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Trash2, FileText, CheckCircle, AlertCircle, Plus } from 'lucide-react';
+import { ChevronLeft, Trash2, FileText, CheckCircle, AlertCircle, Plus, Pencil } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { WordPair } from '../hooks/useGameState';
 
@@ -21,6 +21,7 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
   const [parsedPairs, setParsedPairs] = useState<WordPair[]>([]);
   const [errorText, setErrorText] = useState('');
   const [isImportMode, setIsImportMode] = useState(false);
+  const [editingListId, setEditingListId] = useState<string | null>(null);
 
   // Re-parse the bulk text whenever it changes
   useEffect(() => {
@@ -32,24 +33,55 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
 
     const lines = bulkText.split(/\r?\n/);
     const pairs: WordPair[] = [];
-    const delimiterRegex = /^\s*([^,;\-\n\r]+?)\s*[,;\-]\s*([^,;\-\n\r]+?)\s*$/;
     let malformedCount = 0;
 
     lines.forEach((line) => {
       const trimmedLine = line.trim();
       if (!trimmedLine) return; // skip empty lines
 
-      const match = trimmedLine.match(delimiterRegex);
-      if (match) {
-        const civil = match[1].trim();
-        const undercover = match[2].trim();
-        if (civil && undercover) {
-          pairs.push({ civil, undercover });
+      // Custom multi-stage parsing to support optional hint and preserve internal commas in hint
+      const firstComma = trimmedLine.indexOf(',');
+      const firstSemi = trimmedLine.indexOf(';');
+      const firstDashSpaced = trimmedLine.indexOf(' - ');
+      const firstDash = firstDashSpaced !== -1 ? firstDashSpaced : trimmedLine.indexOf('-');
+      const dashChar = firstDashSpaced !== -1 ? ' - ' : '-';
+
+      const delimiters = [
+        { char: ';', index: firstSemi },
+        { char: dashChar, index: firstDash },
+        { char: ',', index: firstComma }
+      ].filter(d => d.index !== -1);
+
+      if (delimiters.length === 0) {
+        malformedCount++;
+        return;
+      }
+
+      delimiters.sort((a, b) => a.index - b.index);
+      const delimiter = delimiters[0].char;
+      const firstIdx = delimiters[0].index;
+
+      const part1 = trimmedLine.substring(0, firstIdx).trim();
+      const rest = trimmedLine.substring(firstIdx + delimiter.length);
+
+      const secondIdx = rest.indexOf(delimiter);
+      if (secondIdx === -1) {
+        // Only 2 items: Civil, Undercover
+        const part2 = rest.trim();
+        if (part1 && part2) {
+          pairs.push({ civil: part1, undercover: part2 });
         } else {
           malformedCount++;
         }
       } else {
-        malformedCount++;
+        // 3 items: Civil, Undercover, Hint (supports internal delimiters in hint)
+        const part2 = rest.substring(0, secondIdx).trim();
+        const hint = rest.substring(secondIdx + delimiter.length).trim();
+        if (part1 && part2) {
+          pairs.push({ civil: part1, undercover: part2, hint: hint || undefined });
+        } else {
+          malformedCount++;
+        }
       }
     });
 
@@ -58,8 +90,8 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
     if (pairs.length === 0 && malformedCount > 0) {
       setErrorText(
         lang === 'fr'
-          ? "Aucune ligne valide trouvée. Séparez par une virgule, point-virgule ou tiret (ex: Chat, Chien)."
-          : "No valid lines found. Separate with comma, semicolon, or dash (e.g. Cat, Dog)."
+          ? "Aucune ligne valide trouvée. Séparez par une virgule, point-virgule ou tiret (ex: Chat, Chien ou Chat, Chien, Indice)."
+          : "No valid lines found. Separate with comma, semicolon, or dash (e.g. Cat, Dog or Cat, Dog, Hint)."
       );
     } else if (malformedCount > 0) {
       setErrorText(
@@ -86,17 +118,41 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
       return;
     }
 
-    const newList: CustomWordList = {
-      id: `list_${Date.now()}`,
-      name: trimmedName,
-      pairs: parsedPairs,
-    };
+    if (editingListId) {
+      const updatedLists = customLists.map((list) => {
+        if (list.id === editingListId) {
+          return {
+            ...list,
+            name: trimmedName,
+            pairs: parsedPairs,
+          };
+        }
+        return list;
+      });
+      setCustomLists(updatedLists);
+      setEditingListId(null);
+    } else {
+      const newList: CustomWordList = {
+        id: `list_${Date.now()}`,
+        name: trimmedName,
+        pairs: parsedPairs,
+      };
+      setCustomLists([...customLists, newList]);
+    }
 
-    setCustomLists([...customLists, newList]);
     setListName('');
     setBulkText('');
     setParsedPairs([]);
     setIsImportMode(false);
+  };
+
+  const handleEditList = (list: CustomWordList) => {
+    setEditingListId(list.id);
+    setListName(list.name);
+    // Reverse-serialize WordPair[] back into raw string format inside bulkText:
+    const serializedPairs = list.pairs.map(p => `${p.civil}, ${p.undercover}${p.hint ? `, ${p.hint}` : ''}`).join('\n');
+    setBulkText(serializedPairs);
+    setIsImportMode(true);
   };
 
   const handleDeleteList = (id: string) => {
@@ -156,17 +212,28 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
                       <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--color-text-primary)' }}>
                         {list.name}
                       </div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2 / 0.2rem' }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
                         {list.pairs.length} {lang === 'fr' ? 'paires de mots' : 'word pairs'}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDeleteList(list.id)}
-                      className="btn btn-secondary btn-icon"
-                      style={{ padding: '0.5rem', color: 'var(--color-eliminated)', borderColor: 'var(--color-eliminated-border)' }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleEditList(list)}
+                        className="btn btn-secondary btn-icon"
+                        style={{ padding: '0.5rem' }}
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteList(list.id)}
+                        className="btn btn-secondary btn-icon"
+                        style={{ padding: '0.5rem', color: 'var(--color-eliminated)', borderColor: 'var(--color-eliminated-border)' }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
@@ -175,7 +242,9 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
         ) : (
           <form onSubmit={handleSaveList} className="glass-card" style={{ padding: '1.25rem' }}>
             <h3 style={{ marginBottom: '1rem', color: 'var(--color-text-primary)' }}>
-              {lang === 'fr' ? 'Nouvelle Liste de Mots' : 'New Word List'}
+              {editingListId
+                ? (lang === 'fr' ? 'Modifier la Liste de Mots' : 'Edit Word List')
+                : (lang === 'fr' ? 'Nouvelle Liste de Mots' : 'New Word List')}
             </h3>
 
             <div className="input-group">
@@ -196,15 +265,15 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
               </label>
               <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
                 {lang === 'fr'
-                  ? 'Format : MotCivil , MotUndercover (séparateur: , ou ; ou -)'
-                  : 'Format: CivilWord , UndercoverWord (separators: , or ; or -)'}
+                  ? 'Format : MotCivil , MotUndercover [, IndiceOptionnel] (séparateur: , ou ; ou -)'
+                  : 'Format: CivilWord , UndercoverWord [, OptionalHint] (separators: , or ; or -)'}
               </div>
               <textarea
                 className="textarea-bulk"
                 placeholder={
                   lang === 'fr'
-                    ? "Chat, Chien\nPomme; Poire\nOrdinateur - Tablette\nFrite-Chips"
-                    : "Cat, Dog\nApple; Pear\nComputer - Tablet\nFries-Chips"
+                    ? "Chat, Chien, Animaux domestiques\nPomme; Poire\nOrdinateur - Tablette - Technologie\nFrite-Chips-Snack"
+                    : "Cat, Dog, Pets\nApple; Pear\nComputer - Tablet - Technology\nFries-Chips-Snack"
                 }
                 value={bulkText}
                 onChange={(e) => setBulkText(e.target.value)}
@@ -271,14 +340,21 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
                       key={idx}
                       style={{
                         display: 'flex',
-                        justifyContent: 'space-between',
-                        padding: '0.25rem 0.5rem',
-                        fontSize: '0.85rem',
+                        flexDirection: 'column',
+                        padding: '0.35rem 0.5rem',
                         borderBottom: idx < parsedPairs.length - 1 ? '1px solid var(--glass-border)' : 'none',
                       }}
                     >
-                      <span style={{ color: 'var(--color-civil)' }}>{p.civil}</span>
-                      <span style={{ color: 'var(--color-undercover)' }}>{p.undercover}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                        <span style={{ color: 'var(--color-civil)', fontWeight: 600 }}>{p.civil}</span>
+                        <span style={{ color: 'var(--color-undercover)', fontWeight: 600 }}>{p.undercover}</span>
+                      </div>
+                      {p.hint && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.1rem', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                          <span>💡</span>
+                          <span>{p.hint}</span>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -293,6 +369,7 @@ export default function CustomListEditor({ onBack, lang }: CustomListEditorProps
                   setIsImportMode(false);
                   setBulkText('');
                   setListName('');
+                  setEditingListId(null);
                 }}
               >
                 {lang === 'fr' ? 'Annuler' : 'Cancel'}

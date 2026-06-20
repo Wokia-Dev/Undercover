@@ -5,18 +5,18 @@ import type { CustomWordList } from './CustomListEditor';
 import { getRecommendedRoles } from '../utils/gameLogic';
 import type { RoleSettings } from '../utils/gameLogic';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import type { WordPair } from '../hooks/useGameState';
 
 interface SetupScreenProps {
   lang: 'en' | 'fr';
   onStartGame: (
     playerNames: string[],
     roles: RoleSettings,
-    wordPair: WordPair,
     categoryName: string,
     descriptionMode: 'guided' | 'verbal',
     timerDuration: number,
-    categoryId: string
+    categoryId: string,
+    enableHints?: boolean,
+    hintTarget?: 'undercover' | 'mr_white' | 'both'
   ) => void;
   onOpenCustomLists: () => void;
   leaderboard: Record<string, number>;
@@ -29,13 +29,15 @@ export default function SetupScreen({
   onOpenCustomLists,
   leaderboard,
   onClearLeaderboard,
-}: SetupScreenProps) {
+  }: SetupScreenProps) {
   // Load custom lists from local storage
   const [customLists] = useLocalStorage<CustomWordList[]>('undercover_custom_lists', []);
-  
+
   // Custom game preferences persisted locally
   const [descriptionMode, setDescriptionMode] = useLocalStorage<'guided' | 'verbal'>('undercover_setup_description_mode', 'guided');
   const [timerDuration, setTimerDuration] = useLocalStorage<number>('undercover_setup_timer_duration', 90);
+  const [enableHints, setEnableHints] = useLocalStorage<boolean>('undercover_setup_enable_hints', false);
+  const [hintTarget, setHintTarget] = useLocalStorage<'undercover' | 'mr_white' | 'both'>('undercover_setup_hint_target', 'undercover');
   const [showAdvanced, setShowAdvanced] = useState(false);
   
   // Set default names or fetch from previous state
@@ -46,11 +48,11 @@ export default function SetupScreen({
     'David',
   ]);
 
-  const [selectedCategoryId, setSelectedCategoryId] = useState('animaux');
+  const [selectedCategoryId, setSelectedCategoryId] = useLocalStorage<string>('undercover_setup_selected_category_id', 'animaux');
   
   // Role configurations
-  const [roles, setRoles] = useState<RoleSettings>({ civil: 3, undercover: 1, mrWhite: 0 });
-  const [isManualOverride, setIsManualOverride] = useState(false);
+  const [roles, setRoles] = useLocalStorage<RoleSettings>('undercover_setup_roles', { civil: 3, undercover: 1, mrWhite: 0 });
+  const [isManualOverride, setIsManualOverride] = useLocalStorage<boolean>('undercover_setup_manual_override', false);
 
   // Sync categories depending on language
   const categories = lang === 'fr' ? DEFAULT_CATEGORIES_FR : DEFAULT_CATEGORIES_EN;
@@ -64,15 +66,35 @@ export default function SetupScreen({
     if (!ids.includes(selectedCategoryId)) {
       setSelectedCategoryId(categories[0]?.id || 'animaux');
     }
-  }, [lang, categories, customLists, selectedCategoryId]);
+  }, [lang, categories, customLists, selectedCategoryId, setSelectedCategoryId]);
 
-  // Adjust roles automatically when player count changes, unless overridden manually
+  // Adjust roles automatically when player count changes
   useEffect(() => {
     if (!isManualOverride) {
       const rec = getRecommendedRoles(playerNames.length);
       setRoles(rec);
+    } else {
+      // In manual override mode, make sure roles total still equals playerNames.length.
+      // Adjust civil count to match, preserving the custom infiltrator counts as much as possible.
+      setRoles((prev) => {
+        const currentTotal = prev.civil + prev.undercover + prev.mrWhite;
+        const diff = playerNames.length - currentTotal;
+        if (diff === 0) return prev;
+
+        let newCivil = prev.civil + diff;
+        let newUndercover = prev.undercover;
+        let newMrWhite = prev.mrWhite;
+
+        if (newCivil < 1) {
+          newCivil = 1;
+          const remaining = playerNames.length - 1;
+          newMrWhite = Math.min(prev.mrWhite, remaining);
+          newUndercover = remaining - newMrWhite;
+        }
+        return { civil: newCivil, undercover: newUndercover, mrWhite: newMrWhite };
+      });
     }
-  }, [playerNames.length, isManualOverride]);
+  }, [playerNames.length, isManualOverride, setRoles]);
 
   // Player management
   const handleAddPlayer = () => {
@@ -126,25 +148,25 @@ export default function SetupScreen({
     }
   };
 
-  // Select a word pair and category details to pass to start
+  // Select category details to pass to start
   const handleLaunch = () => {
     // 1. Gather all word lists (default categories + custom lists)
-    let selectedPairs: [string, string][] = [];
+    let selectedPairsCount = 0;
     let catName = '';
 
     const customList = customLists.find(l => l.id === selectedCategoryId);
     if (customList) {
-      selectedPairs = customList.pairs.map(p => [p.civil, p.undercover]);
+      selectedPairsCount = customList.pairs.length;
       catName = customList.name;
     } else {
       const defaultCategory = categories.find(c => c.id === selectedCategoryId);
       if (defaultCategory) {
-        selectedPairs = defaultCategory.pairs;
+        selectedPairsCount = defaultCategory.pairs.length;
         catName = defaultCategory.name;
       }
     }
 
-    if (selectedPairs.length === 0) {
+    if (selectedPairsCount === 0) {
       alert(
         lang === 'fr'
           ? "Aucun mot disponible dans cette catégorie !"
@@ -153,16 +175,8 @@ export default function SetupScreen({
       return;
     }
 
-    // 2. Pick a random word pair
-    const randomIdx = Math.floor(Math.random() * selectedPairs.length);
-    const rawPair = selectedPairs[randomIdx];
-    const wordPair: WordPair = {
-      civil: rawPair[0],
-      undercover: rawPair[1],
-    };
-
-    // 3. Launch game state
-    onStartGame(playerNames, roles, wordPair, catName, descriptionMode, timerDuration, selectedCategoryId);
+    // 2. Launch game state
+    onStartGame(playerNames, roles, catName, descriptionMode, timerDuration, selectedCategoryId, enableHints, hintTarget);
   };
 
   const handleResetRoles = () => {
@@ -426,6 +440,56 @@ export default function SetupScreen({
                   <option value={0}>{lang === 'fr' ? 'Pas de limite / Libre' : 'No Limit / Open'}</option>
                 </select>
               </div>
+
+              {/* Optional Hints for Custom Lists */}
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <label className="input-label" style={{ marginBottom: 0, cursor: 'pointer' }} htmlFor="hints-toggle">
+                    {lang === 'fr' ? 'Activer les indices pour les listes perso' : 'Enable hints for custom lists'}
+                  </label>
+                  <input
+                    id="hints-toggle"
+                    type="checkbox"
+                    checked={enableHints}
+                    onChange={(e) => setEnableHints(e.target.checked)}
+                    style={{
+                      width: '18px',
+                      height: '18px',
+                      accentColor: 'var(--color-primary)',
+                      cursor: 'pointer'
+                    }}
+                  />
+                </div>
+                <p style={{ fontSize: '0.75rem', marginTop: '0.25rem', color: 'var(--color-text-muted)' }}>
+                  {lang === 'fr'
+                    ? "Affiche l'indice des mots personnalisés aux rôles infiltrés spécifiés."
+                    : "Show the hint of custom word pairs to the specified infiltrated roles."}
+                </p>
+              </div>
+
+              {enableHints && (
+                <div className="input-group" style={{ marginBottom: 0, animation: 'fadeIn 0.2s ease-out' }}>
+                  <label className="input-label">
+                    {lang === 'fr' ? "Distribuer l'indice à :" : "Distribute hint to:"}
+                  </label>
+                  <select
+                    className="input-select"
+                    value={hintTarget}
+                    onChange={(e) => setHintTarget(e.target.value as 'undercover' | 'mr_white' | 'both')}
+                    style={{ marginTop: '0.25rem' }}
+                  >
+                    <option value="undercover">
+                      {lang === 'fr' ? 'Undercover uniquement' : 'Undercover only'}
+                    </option>
+                    <option value="mr_white">
+                      {lang === 'fr' ? 'Mr. White uniquement' : 'Mr. White only'}
+                    </option>
+                    <option value="both">
+                      {lang === 'fr' ? 'Undercover & Mr. White' : 'Undercover & Mr. White'}
+                    </option>
+                  </select>
+                </div>
+              )}
             </div>
           )}
         </div>

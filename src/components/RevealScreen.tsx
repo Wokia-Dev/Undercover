@@ -34,6 +34,15 @@ export default function RevealScreen({ lang, gameState, onNextReveal }: RevealSc
   if (currentPlayer.role === 'civil') themeClass = 'civil-theme';
   else if (currentPlayer.role === 'undercover') themeClass = 'undercover-theme';
 
+  const hasHint = !!gameState.currentWordPair.hint;
+  const enableHints = !!gameState.enableHints;
+  const hintTarget = gameState.hintTarget || 'undercover';
+
+  const shouldShowHint = hasHint && enableHints && (
+    (currentPlayer.role === 'undercover' && (hintTarget === 'undercover' || hintTarget === 'both')) ||
+    (currentPlayer.role === 'mr_white' && (hintTarget === 'mr_white' || hintTarget === 'both'))
+  );
+
   return (
     <div className="screen-wrapper">
       <div>
@@ -93,6 +102,32 @@ export default function RevealScreen({ lang, gameState, onNextReveal }: RevealSc
                   <div className="revealed-word" style={{ fontSize: '1.75rem', color: 'var(--color-text-primary)' }}>
                     {lang === 'fr' ? 'Vous êtes Mr. White' : 'You are Mr. White'}
                   </div>
+                  {shouldShowHint && (
+                    <div
+                      style={{
+                        marginTop: '0.5rem',
+                        marginBottom: '1rem',
+                        fontSize: '0.95rem',
+                        fontWeight: 600,
+                        color: 'var(--color-accent)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.25rem',
+                        padding: '0.35rem 0.75rem',
+                        background: 'var(--btn-secondary-bg)',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--glass-border)',
+                        width: 'fit-content',
+                        marginInline: 'auto',
+                      }}
+                    >
+                      <span>💡</span>
+                      <span style={{ fontStyle: 'italic' }}>
+                        {lang === 'fr' ? `Indice : ${gameState.currentWordPair.hint}` : `Hint: ${gameState.currentWordPair.hint}`}
+                      </span>
+                    </div>
+                  )}
                   <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
                     {lang === 'fr'
                       ? "Vous n'avez aucun mot secret. Mentez et improvisez pour vous fondre dans la masse !"
@@ -107,6 +142,32 @@ export default function RevealScreen({ lang, gameState, onNextReveal }: RevealSc
                   <div className="revealed-word" style={{ color: currentPlayer.role === 'civil' ? 'var(--color-civil)' : 'var(--color-undercover)' }}>
                     {currentPlayer.word}
                   </div>
+                  {shouldShowHint && (
+                    <div
+                      style={{
+                        marginTop: '-0.75rem',
+                        marginBottom: '1.25rem',
+                        fontSize: '0.95rem',
+                        fontWeight: 600,
+                        color: 'var(--color-accent)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.25rem',
+                        padding: '0.35rem 0.75rem',
+                        background: 'var(--btn-secondary-bg)',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--glass-border)',
+                        width: 'fit-content',
+                        marginInline: 'auto',
+                      }}
+                    >
+                      <span>💡</span>
+                      <span style={{ fontStyle: 'italic' }}>
+                        {lang === 'fr' ? `Indice : ${gameState.currentWordPair.hint}` : `Hint: ${gameState.currentWordPair.hint}`}
+                      </span>
+                    </div>
+                  )}
                   <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
                     {lang === 'fr'
                       ? "Décrivez ce mot en un mot ou une courte phrase sans éveiller les soupçons !"

@@ -26,6 +26,7 @@ export type GamePhase =
 export interface WordPair {
   civil: string;
   undercover: string;
+  hint?: string;
 }
 
 export interface GameState {
@@ -44,6 +45,9 @@ export interface GameState {
   pointsAwarded: boolean;
   descriptionMode: 'guided' | 'verbal';
   timerDuration: number;
+  enableHints?: boolean;
+  hintTarget?: 'undercover' | 'mr_white' | 'both';
+  playedWordIndices: Record<string, number[]>;
 }
 
 const initialGameState: GameState = {
@@ -62,24 +66,110 @@ const initialGameState: GameState = {
   pointsAwarded: false,
   descriptionMode: 'guided',
   timerDuration: 90,
+  enableHints: false,
+  hintTarget: 'undercover',
+  playedWordIndices: {},
 };
+
+export function getWordPairsForCategory(
+  categoryId: string,
+  lang: 'en' | 'fr'
+): WordPair[] {
+  let customLists: any[] = [];
+  try {
+    const stored = window.localStorage.getItem('undercover_custom_lists');
+    if (stored) {
+      customLists = JSON.parse(stored);
+    }
+  } catch (e) {
+    console.warn('Error reading custom lists from localStorage:', e);
+  }
+
+  const customList = customLists.find(l => l.id === categoryId);
+  if (customList) {
+    return customList.pairs;
+  }
+  const categories = lang === 'fr' ? DEFAULT_CATEGORIES_FR : DEFAULT_CATEGORIES_EN;
+  const defaultCategory = categories.find(c => c.id === categoryId);
+  if (defaultCategory) {
+    return defaultCategory.pairs.map(p => ({ civil: p[0], undercover: p[1] }));
+  }
+  return [];
+}
+
+export function pickWordPairWithExhaustionPool(
+  categoryId: string,
+  lang: 'en' | 'fr',
+  currentPlayedMap: Record<string, number[]>
+): { wordPair: WordPair; updatedMap: Record<string, number[]> } {
+  let selectedPairs = getWordPairsForCategory(categoryId, lang);
+  let activeCategoryId = categoryId;
+
+  if (selectedPairs.length === 0) {
+    const categories = lang === 'fr' ? DEFAULT_CATEGORIES_FR : DEFAULT_CATEGORIES_EN;
+    selectedPairs = categories.flatMap(c => c.pairs.map(p => ({ civil: p[0], undercover: p[1] })));
+    activeCategoryId = 'all_fallback';
+  }
+
+  const totalPairs = selectedPairs.length;
+  let playedIndices = currentPlayedMap[activeCategoryId] || [];
+
+  const hasOutOfBounds = playedIndices.some(idx => idx < 0 || idx >= totalPairs);
+  if (playedIndices.length >= totalPairs || hasOutOfBounds) {
+    playedIndices = [];
+  }
+
+  const unplayedIndices: number[] = [];
+  for (let i = 0; i < totalPairs; i++) {
+    if (!playedIndices.includes(i)) {
+      unplayedIndices.push(i);
+    }
+  }
+
+  let finalUnplayed = unplayedIndices;
+  if (finalUnplayed.length === 0) {
+    finalUnplayed = Array.from({ length: totalPairs }, (_, i) => i);
+    playedIndices = [];
+  }
+
+  const randomUnplayedIdx = Math.floor(Math.random() * finalUnplayed.length);
+  const pickedIndex = finalUnplayed[randomUnplayedIdx];
+
+  const updatedPlayedIndices = [...playedIndices, pickedIndex];
+  const wordPair = selectedPairs[pickedIndex];
+
+  return {
+    wordPair,
+    updatedMap: {
+      ...currentPlayedMap,
+      [activeCategoryId]: updatedPlayedIndices,
+    },
+  };
+}
 
 export function useGameState() {
   const [gameState, setGameState] = useLocalStorage<GameState>('undercover_game_state', initialGameState);
   const [leaderboard, setLeaderboard] = useLocalStorage<Record<string, number>>('undercover_leaderboard', {});
   const [activeLanguage, setActiveLanguage] = useLocalStorage<'en' | 'fr'>('undercover_language', 'fr');
-  const [customLists] = useLocalStorage<any[]>('undercover_custom_lists', []);
 
   // Start a new game
   const startGame = (
     playerNames: string[],
     roles: RoleSettings,
-    wordPair: WordPair,
     categoryName: string,
     descriptionMode: 'guided' | 'verbal',
     timerDuration: number,
-    categoryId: string
+    categoryId: string,
+    enableHints?: boolean,
+    hintTarget?: 'undercover' | 'mr_white' | 'both'
   ) => {
+    const playedMap = gameState.playedWordIndices || {};
+    const { wordPair, updatedMap } = pickWordPairWithExhaustionPool(
+      categoryId,
+      activeLanguage,
+      playedMap
+    );
+
     // Generate fresh players with roles and words
     const newPlayers = setupPlayers(playerNames, roles, wordPair);
 
@@ -114,6 +204,9 @@ export function useGameState() {
       pointsAwarded: false,
       descriptionMode,
       timerDuration,
+      enableHints: enableHints || false,
+      hintTarget: hintTarget || 'undercover',
+      playedWordIndices: updatedMap,
     });
   };
 
@@ -282,6 +375,7 @@ export function useGameState() {
         word: '',
       })),
       status: 'setup',
+      playedWordIndices: prev.playedWordIndices || {},
     }));
   };
 
@@ -319,32 +413,13 @@ export function useGameState() {
   // Play again (re-runs match directly using current configurations, keeping cumulative scores)
   const playAgain = () => {
     const categoryId = gameState.currentCategoryId || '';
-    const categoryName = gameState.currentCategory;
-    const lang = activeLanguage;
 
-    let selectedPairs: [string, string][] = [];
-    const customList = customLists.find((l: any) => l.id === categoryId || l.name === categoryName);
-    if (customList) {
-      selectedPairs = customList.pairs.map((p: any) => [p.civil, p.undercover]);
-    } else {
-      const categories = lang === 'fr' ? DEFAULT_CATEGORIES_FR : DEFAULT_CATEGORIES_EN;
-      const defaultCategory = categories.find(c => c.id === categoryId || c.name === categoryName);
-      if (defaultCategory) {
-        selectedPairs = defaultCategory.pairs;
-      }
-    }
-
-    if (selectedPairs.length === 0) {
-      const categories = lang === 'fr' ? DEFAULT_CATEGORIES_FR : DEFAULT_CATEGORIES_EN;
-      selectedPairs = categories.flatMap(c => c.pairs);
-    }
-
-    const randomIdx = Math.floor(Math.random() * selectedPairs.length);
-    const rawPair = selectedPairs[randomIdx];
-    const wordPair: WordPair = {
-      civil: rawPair[0],
-      undercover: rawPair[1],
-    };
+    const playedMap = gameState.playedWordIndices || {};
+    const { wordPair, updatedMap } = pickWordPairWithExhaustionPool(
+      categoryId,
+      activeLanguage,
+      playedMap
+    );
 
     const roleCounts = { civil: 0, undercover: 0, mrWhite: 0 };
     gameState.players.forEach(p => {
@@ -386,6 +461,7 @@ export function useGameState() {
       eliminatedPlayerId: null,
       mrWhiteGuessedCorrectly: null,
       pointsAwarded: false,
+      playedWordIndices: updatedMap,
     }));
   };
 
